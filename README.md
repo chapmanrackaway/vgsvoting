@@ -6,6 +6,19 @@ committee and floor.
 
 Anyone can view everything without logging in. Clerks log in to make changes.
 
+## Launch it (no command line needed)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/chapmanrackaway/vgsvoting)
+
+1. Click the button above, sign in to Render with GitHub, and allow it to read this repository.
+2. Click **Apply**. Render builds the site and creates its database, which takes about 5 minutes.
+3. Open the `https://vgs-tracker-….onrender.com` address Render shows you, go to **/setup**, and create
+   the administrator account. Then add clerk accounts under **Users**.
+
+The default plans (an always-on web service plus a small database) cost roughly $13/month. To try it
+for free, switch both plans to **Free** on the Apply screen. A free site sleeps after 15 idle minutes,
+and the free database is deleted after 30 days, so use the paid plans during a live simulation.
+
 ## Features
 
 | Area | What it does |
