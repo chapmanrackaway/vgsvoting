@@ -1,0 +1,26 @@
+# Google App Engine (standard) configuration.
+# IMPORTANT: App Engine's disk is temporary, so you must point DATABASE_URL at a
+# real database (e.g. Cloud SQL for PostgreSQL). See README.md.
+runtime: python312
+entrypoint: gunicorn -c gunicorn.conf.py wsgi:app
+instance_class: F2
+
+automatic_scaling:
+  min_instances: 1        # keep one warm instance so the site never "cold starts" mid-session
+  max_instances: 4
+
+env_variables:
+  SIM_NAME: "Virginia Government Simulation"
+  TIMEZONE: "America/New_York"
+  SESSION_COOKIE_SECURE: "1"
+  # Set these two before deploying (or use Secret Manager):
+  # SECRET_KEY: "a-long-random-string"
+  # DATABASE_URL: "postgresql://USER:PASSWORD@/DBNAME?host=/cloudsql/PROJECT:REGION:INSTANCE"
+
+handlers:
+  - url: /static
+    static_dir: app/static
+    secure: always
+  - url: /.*
+    script: auto
+    secure: always

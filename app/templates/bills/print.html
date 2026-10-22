@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>{{ bill.label }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body class="print-page">
+<h1>{{ bill.label }}: {{ bill.title }}</h1>
+<p><strong>Status:</strong> {{ bill.status }}{% if bill.committee %} · <strong>Committee:</strong> {{ bill.committee.display_name }}{% endif %}</p>
+<p><strong>Chief patron:</strong> {{ bill.patron.display_name if bill.patron else '—' }}
+{% if bill.copatrons %}<br><strong>Co-patrons:</strong> {% for m in bill.copatrons %}{{ m.display_name }}{{ ', ' if not loop.last }}{% endfor %}{% endif %}</p>
+{% if bill.summary %}<h2>Summary</h2><p class="pre">{{ bill.summary }}</p>{% endif %}
+{% if bill.text %}<h2>Text</h2><div class="bill-text pre">{{ bill.text }}</div>{% endif %}
+{% if bill.amendments %}<h2>Amendments</h2><ol>{% for a in bill.amendments %}<li><strong>{{ a.stage }} — {{ a.status }}</strong>{% if a.offered_by %} (offered by {{ a.offered_by.display_name }}){% endif %}<div class="pre">{{ a.text }}</div></li>{% endfor %}</ol>{% endif %}
+{% if bill.votes %}<h2>Votes</h2><table class="table compact"><tbody>{% for v in bill.votes|reverse %}<tr><td>{{ v.taken_at|localtime }}</td><td>{{ v.body }}</td><td>{{ v.motion }}</td><td>{{ v.tally_text }}</td><td>{{ v.result }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+<h2>History</h2>
+<table class="table compact"><tbody>{% for a in bill.actions|reverse %}<tr><td class="nowrap">{{ a.created_at|localtime }}</td><td>{{ a.chamber or '' }}</td><td>{{ a.description }}</td></tr>{% endfor %}</tbody></table>
+<script>window.print()</script>
+</body></html>

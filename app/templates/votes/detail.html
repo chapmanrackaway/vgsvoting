@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, result_badge %}
+{% block title %}Vote · {{ vote.bill.label }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ vote.bill.label }} — {{ vote.motion }}</h1>
+    <p class="muted"><a href="{{ url_for('bills.bill_detail', bill_id=vote.bill_id) }}">{{ vote.bill.title }}</a>
+      {% if vote.amendment %} · Amendment #{{ vote.amendment.number }}{% endif %}</p>
+  </div>
+  <div class="actions">
+    {% if can_edit %}<a class="btn btn-secondary" href="{{ url_for('votes.edit_vote', vote_id=vote.id) }}">Correct</a>{% endif %}
+    <button class="btn btn-ghost" onclick="window.print()">Print</button>
+  </div>
+</div>
+<section class="card vote-summary">
+  <div>
+    <div class="big-result">{{ result_badge(vote) }}</div>
+    <p>{{ vote.body }} · {{ vote.taken_at|localtime }} · {{ THRESHOLDS[vote.threshold] }}</p>
+    {% if vote.tie_breaker %}<p>Lieutenant Governor's tie-breaking vote: <strong>{{ POSITIONS[vote.tie_breaker] }}</strong>{% if vote.tally()['Y'] != vote.tally()['N'] %} (not needed){% endif %}</p>{% endif %}
+    {% if vote.notes %}<p class="pre">{{ vote.notes }}</p>{% endif %}
+  </div>
+  {% if not vote.voice %}
+  {% set t = vote.tally() %}
+  <div class="tally-big">
+    <div class="pos-Y"><b>{{ t.Y }}</b>Yea</div>
+    <div class="pos-N"><b>{{ t.N }}</b>Nay</div>
+    <div class="pos-A"><b>{{ t.A }}</b>Abstain</div>
+    <div class="pos-X"><b>{{ t.X }}</b>Not voting</div>
+  </div>
+  {% else %}<p><strong>Voice vote</strong> — no individual votes recorded.</p>{% endif %}
+</section>
+{% if not vote.voice %}
+<div class="grid-2">
+  <section class="card">
+    <h2>How members voted</h2>
+    {% for k, label in POSITIONS.items() %}{% if by_position[k] %}
+    <h3><span class="pos pos-{{ k }}">{{ label }}</span> {{ by_position[k]|length }}</h3>
+    <p>{% for m in by_position[k] %}<a href="{{ url_for('roster.member_detail', member_id=m.id) }}">{{ m.last_name }}</a>{% if m.party %} <span class="muted small">{{ m.party }}</span>{% endif %}{{ ', ' if not loop.last }}{% endfor %}</p>
+    {% endif %}{% endfor %}
+  </section>
+  <section class="card">
+    <h2>By party</h2>
+    <div class="table-wrap">
+    <table class="table compact">
+      <thead><tr><th>Party</th>{% for k, v in POSITIONS.items() %}<th>{{ v }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for party, counts in by_party.items() %}<tr><td>{{ party }}</td>{% for k in POSITIONS %}<td>{{ counts[k] }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table>
+    </div>
+  </section>
+</div>
+{% endif %}
+{% if can_edit %}
+<form method="post" action="{{ url_for('votes.delete_vote', vote_id=vote.id) }}" data-confirm="Delete this vote? The bill's status will not be changed automatically." class="noprint">
+  {{ csrf() }}<button class="btn btn-danger btn-small">Delete vote</button>
+</form>
+{% endif %}
+{% endblock %}

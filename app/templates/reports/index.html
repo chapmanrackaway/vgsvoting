@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Reports</h1>
+  <div class="actions">
+    <a class="btn btn-secondary" href="{{ url_for('main.docket_print') }}" target="_blank">Print committee dockets</a>
+    <a class="btn btn-secondary" href="{{ url_for('bills.bill_list', format='csv') }}">Bills CSV</a>
+    <a class="btn btn-secondary" href="{{ url_for('votes.vote_list', format='csv') }}">Votes CSV</a>
+    <a class="btn btn-secondary" href="{{ url_for('roster.export_members') }}">Roster CSV</a>
+  </div>
+</div>
+<div class="grid-2">
+  <section class="card">
+    <h2>Bill status summary</h2>
+    <div class="table-wrap">
+    <table class="table compact">
+      <thead><tr><th>Status</th>{% for c in CHAMBERS %}<th class="num">{{ c }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for status, counts in matrix.items() %}{% if counts.values()|sum %}
+      <tr><td><a href="{{ url_for('bills.bill_list', status=status) }}">{{ status }}</a></td>
+        {% for c in CHAMBERS %}<td class="num"><a href="{{ url_for('bills.bill_list', status=status, chamber=c) }}">{{ counts[c] }}</a></td>{% endfor %}</tr>
+      {% endif %}{% endfor %}
+      </tbody>
+      <tfoot><tr><th>Total</th>{% for c in CHAMBERS %}<th class="num">{{ totals[c] }}</th>{% endfor %}</tr></tfoot>
+    </table>
+    </div>
+  </section>
+  <section class="card">
+    <h2>Committee dockets <span class="muted small">(bills still in committee)</span></h2>
+    {% for c, bills in dockets %}
+      <h3><a href="{{ url_for('roster.committee_detail', committee_id=c.id) }}">{{ c.display_name }}</a> <span class="muted">({{ bills|length }})</span></h3>
+      {% if bills %}<ul class="small">{% for b in bills %}<li><a href="{{ url_for('bills.bill_detail', bill_id=b.id) }}">{{ b.label }}</a> {{ b.title }}{% if b.patron %} — {{ b.patron.last_name }}{% endif %}</li>{% endfor %}</ul>{% endif %}
+    {% else %}<p class="muted">No committees.</p>{% endfor %}
+  </section>
+</div>
+{% endblock %}

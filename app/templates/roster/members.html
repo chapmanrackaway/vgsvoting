@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import member_link %}
+{% block title %}Roster{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Roster</h1>
+  <div class="actions">
+    {% if can_edit %}
+    <a class="btn" href="{{ url_for('roster.new_member') }}">+ Add member</a>
+    <a class="btn btn-secondary" href="{{ url_for('roster.import_members') }}">Import CSV</a>
+    {% endif %}
+    <a class="btn btn-secondary" href="{{ url_for('roster.export_members') }}">Export CSV</a>
+  </div>
+</div>
+<form class="filters" method="get">
+  <input name="q" value="{{ search }}" placeholder="Search name, school, district">
+  <select name="chamber"><option value="">Both chambers</option>{% for c in CHAMBERS %}<option {{ 'selected' if c == chamber }}>{{ c }}</option>{% endfor %}</select>
+  <select name="party"><option value="">All parties</option>{% for k, v in PARTIES.items() %}<option value="{{ k }}" {{ 'selected' if k == party }}>{{ v }}</option>{% endfor %}</select>
+  <label class="check"><input type="checkbox" name="inactive" value="1" {{ 'checked' if show_inactive }}> Include inactive</label>
+  <button class="btn btn-secondary">Filter</button>
+</form>
+{% for ch, group in members|groupby('chamber') %}
+<section class="card">
+  <h2>{{ 'House of Delegates' if ch == 'House' else 'Senate' }} <span class="muted">({{ group|length }})</span></h2>
+  <div class="table-wrap">
+  <table class="table sortable">
+    <thead><tr><th>Name</th><th>Party</th><th>District</th><th>School</th><th>Position</th><th>Committees</th></tr></thead>
+    <tbody>
+    {% for m in group %}
+    <tr class="{{ 'inactive' if not m.active }}">
+      <td><a href="{{ url_for('roster.member_detail', member_id=m.id) }}">{{ m.last_name }}, {{ m.first_name }}</a>{% if not m.active %} <span class="badge">inactive</span>{% endif %}</td>
+      <td><span class="party party-{{ m.party or 'none' }}">{{ m.party or '—' }}</span></td>
+      <td>{{ m.district or '' }}</td>
+      <td>{{ m.school or '' }}</td>
+      <td>{{ m.position or '' }}</td>
+      <td class="small">{% for a in m.assignments %}{{ a.committee.name }}{% if a.role != 'Member' %} ({{ a.role }}){% endif %}{{ ', ' if not loop.last }}{% endfor %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% else %}
+<div class="card"><p class="muted">No members found.{% if can_edit %} <a href="{{ url_for('roster.new_member') }}">Add one</a> or <a href="{{ url_for('roster.import_members') }}">import a CSV</a>.{% endif %}</p></div>
+{% endfor %}
+{% endblock %}

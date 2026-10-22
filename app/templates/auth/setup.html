@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}First-time setup{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Create administrator</h1>
+  <p class="muted">This page only works while no accounts exist. The administrator can then create clerk accounts for each chamber.</p>
+  <form method="post" class="form">
+    {{ csrf() }}
+    <label>Username <input name="username" required autofocus></label>
+    <label>Password (8+ characters) <input name="password" type="password" minlength="8" required></label>
+    <button class="btn">Create account</button>
+  </form>
+</div>
+{% endblock %}

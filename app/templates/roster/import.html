@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Import roster{% endblock %}
+{% block content %}
+<div class="card narrow-wide">
+  <h1>Import roster from CSV</h1>
+  <p>Upload a spreadsheet saved as CSV with a header row. Recognized columns:</p>
+  <p><code>{{ fields|join(', ') }}</code></p>
+  <ul class="small">
+    <li><strong>first_name</strong>, <strong>last_name</strong> and <strong>chamber</strong> (House or Senate) are required.</li>
+    <li><strong>party</strong> is D, R or I. <strong>active</strong> accepts yes/no (defaults to yes).</li>
+    <li>Rows matching an existing member (same name and chamber) update that member instead of creating a duplicate, so re-importing is safe.</li>
+  </ul>
+  <p><a href="{{ url_for('roster.export_members') }}">Download the current roster</a> to use as a template.</p>
+  <form method="post" enctype="multipart/form-data" class="form">
+    {{ csrf() }}
+    <input type="file" name="file" accept=".csv,text/csv" required>
+    <button class="btn">Import</button>
+  </form>
+</div>
+{% endblock %}

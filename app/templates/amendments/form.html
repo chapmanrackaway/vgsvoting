@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, member_options %}
+{% block title %}{{ 'Edit amendment' if amendment.id else 'New amendment' }}{% endblock %}
+{% block content %}
+<div class="card narrow-wide">
+  <h1>{{ amendment.label if amendment.id else 'Amendment to ' ~ bill.label }}</h1>
+  <p class="muted">{{ bill.label }}: {{ bill.title }}</p>
+  <form method="post" class="form grid-form">
+    {{ csrf() }}
+    <label>Offered by
+      <select name="offered_by_id"><option value="">—</option>{{ member_options(members, amendment.offered_by_id) }}</select>
+    </label>
+    <label>Stage
+      <select name="stage">{% for s in AMENDMENT_STAGES %}<option {{ 'selected' if s == amendment.stage }}>{{ s }}</option>{% endfor %}</select>
+    </label>
+    <label>Chamber
+      <select name="chamber">{% for c in CHAMBERS %}<option {{ 'selected' if c == amendment.chamber }}>{{ c }}</option>{% endfor %}</select>
+    </label>
+    <label>Status
+      <select name="status">{% for s in AMENDMENT_STATUSES %}<option {{ 'selected' if s == amendment.status }}>{{ s }}</option>{% endfor %}</select>
+    </label>
+    <label class="full">Amendment text
+      <textarea name="text" rows="8" required placeholder="e.g. On page 1, line 12, after 'shall' strike 'thirty' and insert 'sixty'">{{ amendment.text or '' }}</textarea>
+    </label>
+    <div class="full form-actions">
+      <button class="btn">Save</button>
+      <a class="btn btn-ghost" href="{{ url_for('bills.bill_detail', bill_id=bill.id) }}#amendments">Cancel</a>
+    </div>
+  </form>
+  {% if amendment.id %}
+  <hr>
+  <form method="post" action="{{ url_for('bills.delete_amendment', amendment_id=amendment.id) }}" data-confirm="Delete this amendment? Votes on it are kept but no longer linked.">
+    {{ csrf() }}<button class="btn btn-danger btn-small">Delete amendment</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

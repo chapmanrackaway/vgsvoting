@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, result_badge %}
+{% block title %}{{ member.display_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ member.display_name }}</h1>
+    <p class="muted">
+      {{ 'House of Delegates' if member.chamber == 'House' else 'Senate' }}{% if member.district %} · District {{ member.district }}{% endif %}
+      {% if member.party %} · {{ PARTIES[member.party] }}{% endif %}{% if member.school %} · {{ member.school }}{% endif %}
+      {% if member.position %} · <strong>{{ member.position }}</strong>{% endif %}
+      {% if not member.active %} · <span class="badge">inactive</span>{% endif %}
+    </p>
+  </div>
+  {% if can_edit %}<div class="actions"><a class="btn btn-secondary" href="{{ url_for('roster.edit_member', member_id=member.id) }}">Edit</a></div>{% endif %}
+</div>
+<div class="grid-2">
+  <section class="card">
+    <h2>Committees</h2>
+    {% if member.assignments %}<ul>{% for a in member.assignments %}<li><a href="{{ url_for('roster.committee_detail', committee_id=a.committee_id) }}">{{ a.committee.display_name }}</a>{% if a.role != 'Member' %} — {{ a.role }}{% endif %}</li>{% endfor %}</ul>
+    {% else %}<p class="muted">No committee assignments.</p>{% endif %}
+    <h2>Bills patroned</h2>
+    {% if sponsored %}<ul>{% for b in sponsored %}<li><a href="{{ url_for('bills.bill_detail', bill_id=b.id) }}">{{ b.label }}</a> {{ b.title }} {{ status_badge(b.status) }}</li>{% endfor %}</ul>
+    {% else %}<p class="muted">None.</p>{% endif %}
+    {% if copatroned %}<h2>Co-patron</h2><ul>{% for b in copatroned %}<li><a href="{{ url_for('bills.bill_detail', bill_id=b.id) }}">{{ b.label }}</a> {{ b.title }}</li>{% endfor %}</ul>{% endif %}
+    {% if amendments %}<h2>Amendments offered</h2><ul>{% for a in amendments %}<li><a href="{{ url_for('bills.bill_detail', bill_id=a.bill_id) }}#amendments">{{ a.label }}</a> {{ status_badge(a.status) }}</li>{% endfor %}</ul>{% endif %}
+    {% if member.email or member.notes %}<h2>Contact &amp; notes</h2>{% if member.email %}<p><a href="mailto:{{ member.email }}">{{ member.email }}</a></p>{% endif %}{% if member.notes %}<p class="pre">{{ member.notes }}</p>{% endif %}{% endif %}
+  </section>
+  <section class="card">
+    <h2>Voting record <span class="muted">({{ record|length }})</span></h2>
+    {% if record %}
+    <div class="table-wrap">
+    <table class="table compact">
+      <thead><tr><th>Date</th><th>Bill</th><th>Motion</th><th>Vote</th><th>Result</th></tr></thead>
+      <tbody>
+      {% for mv in record %}{% set v = mv.vote %}
+      <tr>
+        <td class="nowrap small">{{ v.taken_at|localtime('%b %d %I:%M %p') }}</td>
+        <td><a href="{{ url_for('votes.vote_detail', vote_id=v.id) }}">{{ v.bill.label }}</a></td>
+        <td>{{ v.body }}<div class="muted small">{{ v.motion }}</div></td>
+        <td><span class="pos pos-{{ mv.position }}">{{ POSITIONS[mv.position] }}</span></td>
+        <td>{{ result_badge(v) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}<p class="muted">No recorded votes.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

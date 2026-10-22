@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, committee_options %}
+{% block title %}Bills{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Bills &amp; Resolutions</h1>
+  <div class="actions">
+    {% if can_edit %}<a class="btn" href="{{ url_for('bills.new_bill') }}">+ File a bill</a>{% endif %}
+    {% set q = request.args.to_dict() %}{% set _ = q.update({'format': 'csv'}) %}
+    <a class="btn btn-secondary" href="{{ url_for('bills.bill_list', **q) }}">Export CSV</a>
+  </div>
+</div>
+<form class="filters" method="get">
+  <input name="q" value="{{ search }}" placeholder="Search title or number (e.g. HB12)">
+  <select name="chamber"><option value="">Both chambers</option>{% for c in CHAMBERS %}<option {{ 'selected' if c == chamber }}>{{ c }}</option>{% endfor %}</select>
+  <select name="status"><option value="">Any status</option>{% for s in BILL_STATUSES %}<option {{ 'selected' if s == status }}>{{ s }}</option>{% endfor %}</select>
+  <select name="committee"><option value="">Any committee</option>{{ committee_options(committees, committee_id) }}</select>
+  <button class="btn btn-secondary">Filter</button>
+</form>
+<section class="card">
+  {% if bills %}
+  <div class="table-wrap">
+  <table class="table sortable">
+    <thead><tr><th>Bill</th><th>Title</th><th>Patron</th><th>Committee</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for b in bills %}
+    <tr>
+      <td class="nowrap"><a href="{{ url_for('bills.bill_detail', bill_id=b.id) }}"><strong>{{ b.label }}</strong></a></td>
+      <td>{{ b.title }}</td>
+      <td>{{ b.patron.full_name if b.patron else '' }}</td>
+      <td>{{ b.committee.display_name if b.committee else '' }}</td>
+      <td>{{ status_badge(b.status) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="muted small">{{ bills|length }} shown</p>
+  {% else %}<p class="muted">No bills match.</p>{% endif %}
+</section>
+{% endblock %}

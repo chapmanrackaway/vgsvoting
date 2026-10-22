@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ SIM_NAME }}{% endblock %} · VGS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="{{ url_for('main.dashboard') }}">
+      <span class="seal" aria-hidden="true">VA</span>
+      <span>{{ SIM_NAME }}</span>
+    </a>
+    <button class="nav-toggle" type="button" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+    <nav class="main-nav">
+      {% set ep = request.endpoint or '' %}
+      <a href="{{ url_for('roster.members') }}" class="{{ 'active' if ep.startswith('roster.member') or ep.startswith('roster.new') or ep.startswith('roster.edit') or ep == 'roster.import_members' }}">Roster</a>
+      <a href="{{ url_for('roster.committees') }}" class="{{ 'active' if 'committee' in ep }}">Committees</a>
+      <a href="{{ url_for('bills.bill_list') }}" class="{{ 'active' if ep.startswith('bills.') and 'amendment' not in ep }}">Bills</a>
+      <a href="{{ url_for('bills.amendment_list') }}" class="{{ 'active' if 'amendment' in ep }}">Amendments</a>
+      <a href="{{ url_for('votes.vote_list') }}" class="{{ 'active' if ep.startswith('votes.') }}">Votes</a>
+      <a href="{{ url_for('main.reports') }}" class="{{ 'active' if ep.startswith('main.report') or ep == 'main.docket_print' }}">Reports</a>
+      <span class="nav-sep"></span>
+      {% if current_user.is_authenticated %}
+        {% if current_user.is_admin %}<a href="{{ url_for('auth.users') }}" class="{{ 'active' if ep == 'auth.users' }}">Users</a>{% endif %}
+        <a href="{{ url_for('auth.account') }}" title="Account">{{ current_user.username }}</a>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="link-btn">Log out</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-small">Clerk login</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flashes">
+        {% for cat, msg in messages %}<div class="flash flash-{{ cat }}" role="status">{{ msg }}</div>{% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="site-footer wrap">
+  {{ SIM_NAME }} legislative tracker
+</footer>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

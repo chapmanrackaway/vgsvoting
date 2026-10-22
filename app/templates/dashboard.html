@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_macros.html" import result_badge %}
+{% block title %}Home{% endblock %}
+{% block content %}
+{% if needs_setup %}
+<div class="card callout">
+  <strong>Welcome!</strong> No accounts exist yet. <a href="{{ url_for('auth.setup') }}">Create the first administrator account</a> to start entering the roster and bills.
+</div>
+{% endif %}
+<div class="page-head">
+  <h1>Session Overview</h1>
+  {% if can_edit %}
+  <div class="actions">
+    <a class="btn" href="{{ url_for('bills.new_bill') }}">+ File a bill</a>
+    <a class="btn btn-secondary" href="{{ url_for('roster.new_member') }}">+ Add member</a>
+  </div>
+  {% endif %}
+</div>
+<div class="stats">
+  <a class="stat" href="{{ url_for('roster.members') }}"><span class="stat-n">{{ counts.members }}</span><span class="stat-l">Active members</span></a>
+  <a class="stat" href="{{ url_for('bills.bill_list') }}"><span class="stat-n">{{ counts.bills }}</span><span class="stat-l">Bills &amp; resolutions</span></a>
+  <a class="stat" href="{{ url_for('bills.amendment_list') }}"><span class="stat-n">{{ counts.amendments }}</span><span class="stat-l">Amendments</span></a>
+  <a class="stat" href="{{ url_for('votes.vote_list') }}"><span class="stat-n">{{ counts.votes }}</span><span class="stat-l">Recorded votes</span></a>
+</div>
+<div class="grid-2">
+  <section class="card">
+    <h2>Latest actions</h2>
+    {% if recent_actions %}
+    <ul class="timeline">
+      {% for a in recent_actions %}
+      <li>
+        <span class="time">{{ a.created_at|localtime('%b %d %I:%M %p') }}</span>
+        <a href="{{ url_for('bills.bill_detail', bill_id=a.bill_id) }}"><strong>{{ a.bill.label }}</strong></a>
+        {{ a.description }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">No activity yet.</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Recent votes</h2>
+    {% if recent_votes %}
+    <div class="table-wrap">
+    <table class="table compact">
+      <tbody>
+      {% for v in recent_votes %}
+      <tr>
+        <td><a href="{{ url_for('votes.vote_detail', vote_id=v.id) }}">{{ v.bill.label }}</a></td>
+        <td>{{ v.body }}<div class="muted small">{{ v.motion }}</div></td>
+        <td class="nowrap">{{ v.tally_text }}</td>
+        <td>{{ result_badge(v) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}<p class="muted">No votes recorded yet.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

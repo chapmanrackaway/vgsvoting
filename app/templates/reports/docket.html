@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Committee Dockets</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body class="print-page">
+<h1>{{ SIM_NAME }} — Committee Dockets</h1>
+<p class="muted">Generated {{ generated|localtime }}</p>
+{% for c, bills in dockets %}
+<section class="docket">
+  <h2>{{ c.display_name }}</h2>
+  <table class="table compact">
+    <thead><tr><th>Bill</th><th>Title</th><th>Patron</th></tr></thead>
+    <tbody>{% for b in bills %}<tr><td class="nowrap">{{ b.label }}</td><td>{{ b.title }}</td><td>{{ b.patron.display_name if b.patron else '' }}</td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+{% else %}<p>No bills are currently in committee.</p>{% endfor %}
+<script>window.print()</script>
+</body></html>

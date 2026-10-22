@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Committees{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Committees</h1></div>
+{% if can_edit %}
+<form method="post" class="filters card">
+  {{ csrf() }}
+  <strong>New committee:</strong>
+  <select name="chamber">{% for c in CHAMBERS %}<option>{{ c }}</option>{% endfor %}</select>
+  <input name="name" placeholder="e.g. Courts of Justice" required>
+  <button class="btn">Create</button>
+</form>
+{% endif %}
+<div class="grid-2">
+{% for ch in CHAMBERS %}
+  <section class="card">
+    <h2>{{ 'House of Delegates' if ch == 'House' else 'Senate' }}</h2>
+    {% set group = committees|selectattr('chamber', 'equalto', ch)|list %}
+    {% if group %}
+    <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Committee</th><th>Chair</th><th>Members</th></tr></thead>
+      <tbody>
+      {% for c in group %}
+      <tr>
+        <td><a href="{{ url_for('roster.committee_detail', committee_id=c.id) }}">{{ c.name }}</a></td>
+        <td>{% for a in c.assignments if a.role == 'Chair' %}{{ a.member.full_name }}{{ ', ' if not loop.last }}{% endfor %}</td>
+        <td>{{ c.assignments|length }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}<p class="muted">No committees yet.</p>{% endif %}
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, status_badge, member_link %}
+{% block title %}{{ committee.display_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ committee.display_name }}</h1>
+  {% if can_edit %}
+  <form method="post" class="inline-form">
+    {{ csrf() }}<input type="hidden" name="action" value="rename">
+    <input name="name" value="{{ committee.name }}" aria-label="Committee name">
+    <button class="btn btn-small btn-secondary">Rename</button>
+  </form>
+  {% endif %}
+</div>
+<div class="grid-2">
+  <section class="card">
+    <h2>Members <span class="muted">({{ assignments|length }})</span></h2>
+    {% if assignments %}
+    <div class="table-wrap">
+    <table class="table compact">
+      <tbody>
+      {% for a in assignments %}
+      <tr class="{{ 'inactive' if not a.member.active }}">
+        <td>{{ member_link(a.member) }}</td>
+        <td>
+          {% if can_edit %}
+          <form method="post" class="inline-form">
+            {{ csrf() }}<input type="hidden" name="action" value="role"><input type="hidden" name="assignment_id" value="{{ a.id }}">
+            <select name="role" onchange="this.form.submit()">{% for r in roles %}<option {{ 'selected' if r == a.role }}>{{ r }}</option>{% endfor %}</select>
+          </form>
+          {% else %}{{ a.role }}{% endif %}
+        </td>
+        {% if can_edit %}
+        <td>
+          <form method="post">{{ csrf() }}<input type="hidden" name="action" value="remove"><input type="hidden" name="assignment_id" value="{{ a.id }}"><button class="link-btn danger">remove</button></form>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}<p class="muted">No members assigned.</p>{% endif %}
+    {% if can_edit and candidates %}
+    <h3>Add members</h3>
+    <form method="post" class="form">
+      {{ csrf() }}<input type="hidden" name="action" value="add">
+      <div class="checklist">
+        {% for m in candidates %}<label class="check"><input type="checkbox" name="member_ids" value="{{ m.id }}"> {{ m.last_name }}, {{ m.first_name }} {{ m.tag }}</label>{% endfor %}
+      </div>
+      <label>As <select name="role">{% for r in roles %}<option {{ 'selected' if r == 'Member' }}>{{ r }}</option>{% endfor %}</select></label>
+      <button class="btn">Add selected</button>
+    </form>
+    {% endif %}
+  </section>
+  <section class="card">
+    <h2>Bills referred here</h2>
+    {% if bills %}
+    <div class="table-wrap">
+    <table class="table compact">
+      <tbody>
+      {% for b in bills %}
+      <tr>
+        <td><a href="{{ url_for('bills.bill_detail', bill_id=b.id) }}">{{ b.label }}</a></td>
+        <td>{{ b.title }}</td>
+        <td>{{ status_badge(b.status) }}</td>
+        {% if can_edit and b.status == 'In Committee' %}<td><a class="btn btn-small" href="{{ url_for('votes.new_vote', bill_id=b.id, body='committee:' ~ committee.id) }}">Vote</a></td>{% endif %}
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}<p class="muted">No bills referred.</p>{% endif %}
+    {% if can_edit %}
+    <hr>
+    <form method="post" data-confirm="Delete {{ committee.display_name }}? Bills referred here will be left unassigned.">
+      {{ csrf() }}<input type="hidden" name="action" value="delete"><button class="btn btn-danger btn-small">Delete committee</button>
+    </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

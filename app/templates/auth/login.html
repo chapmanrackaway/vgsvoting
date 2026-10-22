@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Clerk login{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Clerk login</h1>
+  <p class="muted">Logging in is only needed to make changes. Anyone can view the roster, bills and votes.</p>
+  <form method="post" class="form">
+    {{ csrf() }}
+    <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+    <label>Username <input name="username" autocomplete="username" required autofocus></label>
+    <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+    <button class="btn">Log in</button>
+  </form>
+</div>
+{% endblock %}

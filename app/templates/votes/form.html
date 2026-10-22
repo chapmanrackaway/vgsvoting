@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}{{ 'Correct vote' if vote else 'Record vote' }} · {{ bill.label }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ 'Correct vote' if vote else 'Record vote' }}: {{ bill.label }}</h1>
+    <p class="muted">{{ bill.title }}{% if amendment %} · <strong>Amendment #{{ amendment.number }}</strong>{% endif %}</p>
+  </div>
+</div>
+{% if bodies %}
+<form method="get" class="filters card" id="body-form">
+  {% if amendment %}<input type="hidden" name="amendment" value="{{ amendment.id }}">{% endif %}
+  <label>Voting body
+    <select name="body" onchange="this.form.submit()">
+      {% for value, label in bodies %}<option value="{{ value }}" {{ 'selected' if value == body_value }}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <noscript><button class="btn btn-secondary">Load roll</button></noscript>
+  <span class="muted small">Changing the body reloads the roll of eligible members.</span>
+</form>
+{% endif %}
+{% if amendment %}<div class="card callout small"><strong>Amendment text:</strong> <span class="pre">{{ amendment.text }}</span></div>{% endif %}
+<form method="post" class="form" id="vote-form">
+  {{ csrf() }}
+  {% if body_value %}<input type="hidden" name="body" value="{{ body_value }}">{% endif %}
+  {% if amendment %}<input type="hidden" name="amendment_id" value="{{ amendment.id }}">{% endif %}
+  <section class="card">
+    <h2>{{ committee.display_name if committee else chamber ~ ' Floor' }}</h2>
+    <div class="grid-form">
+      <label class="full">Motion
+        <input name="motion" required value="{{ vote.motion if vote else ('Adopt amendment #' ~ amendment.number if amendment else ('Report' if committee else 'Pass')) }}"
+               list="motion-suggestions">
+        <datalist id="motion-suggestions">
+          <option>Report</option><option>Report with amendments</option><option>Pass</option><option>Pass by indefinitely</option>
+          <option>Table</option><option>Continue to next session</option><option>Adopt amendment</option><option>Engross</option>
+          <option>Agree to Governor's amendments</option><option>Override Governor's veto</option><option>Reconsider</option>
+          <option>Adopt conference report</option>
+        </datalist>
+      </label>
+      <label>Threshold
+        <select name="threshold">{% for k, v in THRESHOLDS.items() %}<option value="{{ k }}" {{ 'selected' if vote and vote.threshold == k }}>{{ v }}</option>{% endfor %}</select>
+      </label>
+      {% if not vote %}
+      <label>Vote type
+        <select name="voice" id="voice-toggle">
+          <option value="0">Recorded (roll call)</option>
+          <option value="1">Voice vote</option>
+        </select>
+      </label>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card voice-only" {% if not (vote and vote.voice) %}hidden{% endif %}>
+    <h2>Voice vote result</h2>
+    <label class="check"><input type="radio" name="voice_result" value="Passed" {{ 'checked' if not vote or vote.voice_result == 'Passed' }}> Passed</label>
+    <label class="check"><input type="radio" name="voice_result" value="Failed" {{ 'checked' if vote and vote.voice_result == 'Failed' }}> Failed</label>
+  </section>
+
+  <section class="card roll-only" {% if vote and vote.voice %}hidden{% endif %}>
+    <div class="section-head">
+      <h2>Roll call <span class="muted">({{ members|length }} members)</span></h2>
+      <div class="tally-live" aria-live="polite">
+        <span class="pos pos-Y">Y <b data-count="Y">0</b></span>
+        <span class="pos pos-N">N <b data-count="N">0</b></span>
+        <span class="pos pos-A">A <b data-count="A">0</b></span>
+        <span class="pos pos-X">NV <b data-count="X">0</b></span>
+        <strong data-result></strong>
+      </div>
+    </div>
+    {% if members %}
+    <div class="bulk">
+      Set everyone to:
+      {% for k, v in POSITIONS.items() %}<button type="button" class="btn btn-small btn-ghost" data-set-all="{{ k }}">{{ v }}</button>{% endfor %}
+      <span class="muted small">Keyboard: click a row, then press Y / N / A / X.</span>
+    </div>
+    <div class="rollcall">
+      {% for m in members %}{% set cur = positions.get(m.id, 'X') %}
+      <div class="roll-row" tabindex="0" data-member="{{ m.id }}">
+        <span class="roll-name">{{ m.last_name }}, {{ m.first_name }} <span class="muted">{{ m.tag }}</span></span>
+        <span class="roll-opts">
+          {% for k, v in POSITIONS.items() %}
+          <label class="pos-opt pos-{{ k }}"><input type="radio" name="m{{ m.id }}" value="{{ k }}" {{ 'checked' if cur == k }}><span>{{ 'NV' if k == 'X' else k }}</span></label>
+          {% endfor %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="callout">No active members are eligible for this body.
+      {% if committee %}<a href="{{ url_for('roster.committee_detail', committee_id=committee.id) }}">Assign committee members</a> or use a voice vote.{% else %}<a href="{{ url_for('roster.new_member', chamber=chamber) }}">Add members</a>.{% endif %}</p>
+    {% endif %}
+    {% if chamber == 'Senate' and not committee %}
+    <label>Lieutenant Governor's tie-breaking vote (only counts on a tie)
+      <select name="tie_breaker">
+        <option value="">None</option>
+        <option value="Y" {{ 'selected' if vote and vote.tie_breaker == 'Y' }}>Yea</option>
+        <option value="N" {{ 'selected' if vote and vote.tie_breaker == 'N' }}>Nay</option>
+      </select>
+    </label>
+    {% endif %}
+  </section>
+
+  {% if not vote %}
+  <section class="card">
+    <h2>After the vote</h2>
+    {% if amendment %}
+    <label class="check"><input type="checkbox" name="update_amendment" value="1" checked> Mark amendment #{{ amendment.number }} Adopted / Rejected based on the result</label>
+    {% endif %}
+    <div class="grid-form">
+      <label>If it passes, set bill status to
+        <select name="status_passed"><option value="">No change</option>{% for s in BILL_STATUSES %}<option {{ 'selected' if s == pass_status }}>{{ s }}</option>{% endfor %}</select>
+      </label>
+      <label>If it fails, set bill status to
+        <select name="status_failed"><option value="">No change</option>{% for s in BILL_STATUSES %}<option {{ 'selected' if s == fail_status }}>{{ s }}</option>{% endfor %}</select>
+      </label>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <label>Notes <textarea name="notes" rows="2">{{ vote.notes if vote and vote.notes else '' }}</textarea></label>
+    <div class="form-actions">
+      <button class="btn">{{ 'Save corrections' if vote else 'Record vote' }}</button>
+      <a class="btn btn-ghost" href="{{ url_for('votes.vote_detail', vote_id=vote.id) if vote else url_for('bills.bill_detail', bill_id=bill.id) }}">Cancel</a>
+    </div>
+  </section>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>window.VGS_TIEBREAK = {{ 'true' if chamber == 'Senate' and not committee else 'false' }}; initRollCall();</script>
+{% endblock %}

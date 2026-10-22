@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, member_options, committee_options %}
+{% block title %}{{ 'Edit ' ~ bill.label if bill.id else 'File a bill' }}{% endblock %}
+{% block content %}
+<div class="card narrow-wide">
+  <h1>{{ 'Edit ' ~ bill.label if bill.id else 'File a bill' }}</h1>
+  <form method="post" class="form grid-form">
+    {{ csrf() }}
+    {% if not bill.id %}
+    <label>Chamber of origin
+      <select name="chamber">{% for c in CHAMBERS %}<option {{ 'selected' if c == bill.chamber }}>{{ c }}</option>{% endfor %}</select>
+    </label>
+    <label>Type
+      <select name="bill_type">{% for k, v in BILL_TYPES.items() %}<option value="{{ k }}" {{ 'selected' if k == bill.bill_type }}>{{ v }}</option>{% endfor %}</select>
+    </label>
+    <label>Number <input name="number" type="number" min="1" value="{{ next_number or '' }}" placeholder="Next available"></label>
+    <span class="hint">Leave the number blank to assign the next one automatically (HB1, HB2…).</span>
+    {% endif %}
+    <label class="full">Short title <input name="title" value="{{ bill.title or '' }}" required maxlength="300" {{ 'autofocus' if not bill.id }}></label>
+    <label>Chief patron
+      <select name="patron_id"><option value="">—</option>{{ member_options(members, bill.patron_id) }}</select>
+    </label>
+    <label>Committee referral
+      <select name="committee_id"><option value="">Not referred</option>{{ committee_options(committees, bill.committee_id) }}</select>
+    </label>
+    <label class="full">Co-patrons <span class="hint">(Ctrl/⌘-click to select several)</span>
+      <select name="copatron_ids" multiple size="6">{{ member_options(members, bill.copatrons|map(attribute='id')|list, multiple=True) }}</select>
+    </label>
+    <label class="full">Summary <textarea name="summary" rows="3">{{ bill.summary or '' }}</textarea></label>
+    <label class="full">Full text <textarea name="text" rows="12" class="mono">{{ bill.text or '' }}</textarea></label>
+    <div class="full form-actions">
+      <button class="btn">{{ 'Save' if bill.id else 'File bill' }}</button>
+      <a class="btn btn-ghost" href="{{ url_for('bills.bill_detail', bill_id=bill.id) if bill.id else url_for('bills.bill_list') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, member_link %}
+{% block title %}Amendments{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Amendments</h1></div>
+<form class="filters" method="get">
+  <select name="status"><option value="">Any status</option>{% for s in AMENDMENT_STATUSES %}<option {{ 'selected' if s == status }}>{{ s }}</option>{% endfor %}</select>
+  <button class="btn btn-secondary">Filter</button>
+  <span class="muted small">To offer an amendment, open the bill and choose “+ Amendment”.</span>
+</form>
+<section class="card">
+  {% if amendments %}
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Amendment</th><th>Stage</th><th>Offered by</th><th>Text</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for a in amendments %}
+    <tr>
+      <td class="nowrap"><a href="{{ url_for('bills.bill_detail', bill_id=a.bill_id) }}#amendments">{{ a.label }}</a></td>
+      <td>{{ a.chamber or '' }} {{ a.stage }}</td>
+      <td>{{ member_link(a.offered_by) }}</td>
+      <td class="pre amend-text">{{ a.text|truncate(240) }}</td>
+      <td>{{ status_badge(a.status) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="muted">No amendments.</p>{% endif %}
+</section>
+{% endblock %}

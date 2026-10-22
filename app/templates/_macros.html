@@ -1,0 +1,32 @@
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro status_badge(status) -%}
+  {%- set s = status|lower -%}
+  {%- set tone = 'good' if ('passed' in s or 'signed' in s or 'reported' in s or 'overridden' in s or s == 'adopted') else ('bad' if ('failed' in s or 'veto' in s or s in ('rejected', 'withdrawn', 'ruled not germane')) else 'neutral') -%}
+  <span class="badge badge-{{ tone }}">{{ status }}</span>
+{%- endmacro %}
+
+{% macro result_badge(vote) -%}
+  <span class="badge badge-{{ 'good' if vote.passed else 'bad' }}">{{ vote.result }}</span>
+{%- endmacro %}
+
+{% macro member_options(members, selected=None, multiple=False) -%}
+  {%- set sel = selected if multiple else [selected] -%}
+  {%- for chamber, group in members|groupby('chamber') %}
+    <optgroup label="{{ chamber }}">
+      {%- for m in group %}<option value="{{ m.id }}" {{ 'selected' if m.id in sel }}>{{ m.last_name }}, {{ m.first_name }} {{ m.tag }}</option>{% endfor %}
+    </optgroup>
+  {%- endfor %}
+{%- endmacro %}
+
+{% macro committee_options(committees, selected=None) -%}
+  {%- for chamber, group in committees|groupby('chamber') %}
+    <optgroup label="{{ chamber }}">
+      {%- for c in group %}<option value="{{ c.id }}" {{ 'selected' if c.id == selected }}>{{ c.display_name }}</option>{% endfor %}
+    </optgroup>
+  {%- endfor %}
+{%- endmacro %}
+
+{% macro member_link(m) -%}
+  {%- if m %}<a href="{{ url_for('roster.member_detail', member_id=m.id) }}">{{ m.display_name }}</a>{% else %}<span class="muted">—</span>{% endif -%}
+{%- endmacro %}

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, status_badge, result_badge, member_link, committee_options %}
+{% block title %}{{ bill.label }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ bill.label }} <span class="subtitle">{{ bill.title }}</span></h1>
+    <p>{{ status_badge(bill.status) }}
+      {% if bill.committee %}<span class="muted"> · Referred to <a href="{{ url_for('roster.committee_detail', committee_id=bill.committee_id) }}">{{ bill.committee.display_name }}</a></span>{% endif %}
+    </p>
+  </div>
+  <div class="actions">
+    {% if can_edit %}
+    <a class="btn" href="{{ url_for('votes.new_vote', bill_id=bill.id) }}">Record vote</a>
+    <a class="btn btn-secondary" href="{{ url_for('bills.new_amendment', bill_id=bill.id) }}">+ Amendment</a>
+    <a class="btn btn-secondary" href="{{ url_for('bills.edit_bill', bill_id=bill.id) }}">Edit</a>
+    {% endif %}
+    <a class="btn btn-ghost" href="{{ url_for('bills.bill_print', bill_id=bill.id) }}" target="_blank">Print</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <section class="card">
+    <dl class="facts">
+      <dt>Chief patron</dt><dd>{{ member_link(bill.patron) }}</dd>
+      {% if bill.copatrons %}<dt>Co-patrons</dt><dd>{% for m in bill.copatrons %}{{ member_link(m) }}{{ ', ' if not loop.last }}{% endfor %}</dd>{% endif %}
+      <dt>Type</dt><dd>{{ bill.chamber }} {{ BILL_TYPES[bill.bill_type] }}</dd>
+      <dt>Filed</dt><dd>{{ bill.created_at|localtime }}</dd>
+    </dl>
+    {% if bill.summary %}<h2>Summary</h2><p class="pre">{{ bill.summary }}</p>{% endif %}
+    {% if bill.text %}<details {{ 'open' if bill.text|length < 1500 }}><summary><strong>Full text</strong></summary><div class="bill-text pre">{{ bill.text }}</div></details>{% endif %}
+  </section>
+
+  <section class="card" id="history">
+    <h2>History</h2>
+    {% if can_edit %}
+    <form method="post" action="{{ url_for('bills.add_action', bill_id=bill.id) }}" class="form action-form">
+      {{ csrf() }}
+      <div class="row">
+        <select name="status" aria-label="New status"><option value="">Status unchanged</option>{% for s in BILL_STATUSES %}<option {{ 'selected' if s == bill.status }} value="{{ s }}">{{ s }}</option>{% endfor %}</select>
+        <select name="committee_id" aria-label="Refer to committee"><option value="">No referral change</option>{{ committee_options(committees) }}</select>
+      </div>
+      <div class="row">
+        <select name="chamber" aria-label="Where"><option value="">{{ bill.chamber }}</option>{% for c in CHAMBERS + ['Governor'] %}{% if c != bill.chamber %}<option>{{ c }}</option>{% endif %}{% endfor %}</select>
+        <input name="description" placeholder="Note, e.g. 'Read first time', 'Continued to next session'">
+        <button class="btn btn-small">Record</button>
+      </div>
+    </form>
+    {% endif %}
+    {% if bill.actions %}
+    <ul class="timeline">
+      {% for a in bill.actions %}
+      <li>
+        <span class="time">{{ a.created_at|localtime('%b %d %I:%M %p') }}</span>
+        {% if a.chamber %}<span class="chip">{{ a.chamber }}</span>{% endif %}
+        {% if a.vote_id %}<a href="{{ url_for('votes.vote_detail', vote_id=a.vote_id) }}">{{ a.description }}</a>{% else %}{{ a.description }}{% endif %}
+        {% if can_edit %}
+        <form method="post" action="{{ url_for('bills.delete_action', bill_id=bill.id, action_id=a.id) }}" class="inline" data-confirm="Remove this history entry?">{{ csrf() }}<button class="link-btn muted" title="Remove entry">×</button></form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">No actions yet.</p>{% endif %}
+  </section>
+</div>
+
+<section class="card" id="amendments">
+  <div class="section-head">
+    <h2>Amendments <span class="muted">({{ bill.amendments|length }})</span></h2>
+    {% if can_edit %}<a class="btn btn-small btn-secondary" href="{{ url_for('bills.new_amendment', bill_id=bill.id) }}">+ Amendment</a>{% endif %}
+  </div>
+  {% if bill.amendments %}
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>#</th><th>Stage</th><th>Offered by</th><th>Text</th><th>Status</th>{% if can_edit %}<th></th>{% endif %}</tr></thead>
+    <tbody>
+    {% for a in bill.amendments %}
+    <tr>
+      <td>{{ a.number }}</td>
+      <td class="nowrap">{{ a.chamber or '' }} {{ a.stage }}</td>
+      <td>{{ member_link(a.offered_by) }}</td>
+      <td class="pre amend-text">{{ a.text }}</td>
+      <td>{{ status_badge(a.status) }}
+        {% for v in a.votes %}<div class="small"><a href="{{ url_for('votes.vote_detail', vote_id=v.id) }}">{{ v.tally_text }}</a></div>{% endfor %}
+      </td>
+      {% if can_edit %}
+      <td class="nowrap">
+        {% if a.status == 'Pending' %}<a class="btn btn-small" href="{{ url_for('votes.new_vote', bill_id=bill.id, amendment=a.id) }}">Vote</a>{% endif %}
+        <a class="btn btn-small btn-ghost" href="{{ url_for('bills.edit_amendment', amendment_id=a.id) }}">Edit</a>
+      </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="muted">No amendments offered.</p>{% endif %}
+</section>
+
+<section class="card" id="votes">
+  <h2>Votes <span class="muted">({{ bill.votes|length }})</span></h2>
+  {% if bill.votes %}
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>When</th><th>Body</th><th>Motion</th><th>Tally</th><th>Result</th></tr></thead>
+    <tbody>
+    {% for v in bill.votes %}
+    <tr>
+      <td class="nowrap small">{{ v.taken_at|localtime('%b %d %I:%M %p') }}</td>
+      <td>{{ v.body }}</td>
+      <td><a href="{{ url_for('votes.vote_detail', vote_id=v.id) }}">{{ v.motion }}</a>{% if v.amendment %} <span class="chip">Amdt. {{ v.amendment.number }}</span>{% endif %}</td>
+      <td class="nowrap">{{ v.tally_text }}</td>
+      <td>{{ result_badge(v) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="muted">No votes recorded.</p>{% endif %}
+</section>
+
+{% if can_edit %}
+<details class="card danger-zone">
+  <summary>Delete this bill</summary>
+  <form method="post" action="{{ url_for('bills.delete_bill', bill_id=bill.id) }}" class="inline-form">
+    {{ csrf() }}
+    <span>This permanently removes {{ bill.label }} and all its amendments, votes and history. Type <strong>{{ bill.label }}</strong> to confirm:</span>
+    <input name="confirm" autocomplete="off" required>
+    <button class="btn btn-danger btn-small">Delete</button>
+  </form>
+</details>
+{% endif %}
+{% endblock %}

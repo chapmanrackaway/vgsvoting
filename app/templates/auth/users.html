@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Login accounts</h1></div>
+<p class="muted">Clerks can edit the roster, bills, amendments and votes. Administrators can also manage accounts and download full backups.</p>
+<div class="grid-2">
+  <section class="card">
+    <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Username</th><th>Role</th><th>Reset password / role</th><th></th></tr></thead>
+      <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.username }}</td>
+        <td>{{ ROLES[u.role] }}</td>
+        <td>
+          <form method="post" action="{{ url_for('auth.reset_password', user_id=u.id) }}" class="inline-form">
+            {{ csrf() }}
+            <input name="password" type="password" placeholder="New password" minlength="8" required>
+            {% if u.id != current_user.id %}
+            <select name="role">{% for k, v in ROLES.items() %}<option value="{{ k }}" {{ 'selected' if k == u.role }}>{{ v }}</option>{% endfor %}</select>
+            {% endif %}
+            <button class="btn btn-small btn-secondary">Save</button>
+          </form>
+        </td>
+        <td>
+          {% if u.id != current_user.id %}
+          <form method="post" action="{{ url_for('auth.delete_user', user_id=u.id) }}" data-confirm="Delete account {{ u.username }}?">
+            {{ csrf() }}<button class="btn btn-small btn-danger">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  <section class="card">
+    <h2>New account</h2>
+    <form method="post" class="form">
+      {{ csrf() }}
+      <label>Username <input name="username" required></label>
+      <label>Password (8+ characters) <input name="password" type="password" minlength="8" required></label>
+      <label>Role
+        <select name="role">{% for k, v in ROLES.items() %}<option value="{{ k }}" {{ 'selected' if k == 'clerk' }}>{{ v }}</option>{% endfor %}</select>
+      </label>
+      <button class="btn">Create account</button>
+    </form>
+    <hr>
+    <h2>Backup</h2>
+    <p><a class="btn btn-secondary" href="{{ url_for('main.backup') }}">Download full JSON backup</a></p>
+  </section>
+</div>
+{% endblock %}

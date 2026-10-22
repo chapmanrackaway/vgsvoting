@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import result_badge %}
+{% block title %}Votes{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Recorded Votes</h1>
+  <div class="actions">
+    {% set q = request.args.to_dict() %}{% set _ = q.update({'format': 'csv'}) %}
+    <a class="btn btn-secondary" href="{{ url_for('votes.vote_list', **q) }}">Export CSV (with member votes)</a>
+  </div>
+</div>
+<form class="filters" method="get">
+  <select name="chamber"><option value="">Both chambers</option>{% for c in CHAMBERS %}<option {{ 'selected' if c == chamber }}>{{ c }}</option>{% endfor %}</select>
+  <button class="btn btn-secondary">Filter</button>
+  <span class="muted small">To record a vote, open the bill and choose “Record vote”.</span>
+</form>
+<section class="card">
+  {% if votes %}
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>When</th><th>Bill</th><th>Body</th><th>Motion</th><th>Tally</th><th>Result</th></tr></thead>
+    <tbody>
+    {% for v in votes %}
+    <tr>
+      <td class="nowrap small">{{ v.taken_at|localtime('%b %d %I:%M %p') }}</td>
+      <td><a href="{{ url_for('bills.bill_detail', bill_id=v.bill_id) }}">{{ v.bill.label }}</a></td>
+      <td>{{ v.body }}</td>
+      <td><a href="{{ url_for('votes.vote_detail', vote_id=v.id) }}">{{ v.motion }}</a>{% if v.amendment %} <span class="chip">Amdt. {{ v.amendment.number }}</span>{% endif %}</td>
+      <td class="nowrap">{{ v.tally_text }}</td>
+      <td>{{ result_badge(v) }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="muted">No votes recorded.</p>{% endif %}
+</section>
+{% endblock %}
